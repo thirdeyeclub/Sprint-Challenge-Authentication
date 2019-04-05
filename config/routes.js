@@ -2,6 +2,7 @@ const axios = require('axios');
 const bcrypt = require('bcryptjs');
 const jwt = require("jsonwebtoken");
 const db = require('./route-model')
+
 const { authenticate } = require('../auth/authenticate');
 
 module.exports = server => {
@@ -29,7 +30,6 @@ function register(req, res) {
 
 function login(req, res) {
   const { username, password } = req.body;
-
   if (username && password) {
     db.findByUser({ username })
       .then(user => {
@@ -41,7 +41,7 @@ function login(req, res) {
         }
       })
       .catch(err => {
-        res.status(500).json(err);
+        res.status(500).json({message: 'Some error'});
       });
   } else {
     res.status(401).json({ message: "No Pass or Username" });
