@@ -9,7 +9,14 @@ module.exports = server => {
 };
 
 function register(req, res) {
-  // implement user registration
+  let user = req.body;
+  const hash = bcrypt.hashSync(user.password, 10)
+  user.password = hash;
+  addEventListener(user).then(add=>{
+    res.status(201).json(add);
+  }).catch(err=>{
+    res.status(500).json(err);
+  })
 }
 
 function login(req, res) {
