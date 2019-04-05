@@ -1,7 +1,8 @@
 const axios = require('axios');
 const bcrypt = require('bcryptjs');
 const jwt = require("jsonwebtoken");
-const db = require('./route-model')
+const db = require('./route-model');
+const secret = process.env.JWT_SECRET || "no more secret passwords";
 
 const { authenticate } = require('../auth/authenticate');
 
@@ -15,7 +16,9 @@ function register(req, res) {
   const user = req.body;
   const hash = bcrypt.hashSync(user.password, 8);
   user.password = hash;
+  
   if (user.username && user.password) {
+    
     db.add(user) //add the user
       .then(user => {
         res.status(201).json(user);
@@ -73,3 +76,4 @@ function getJokes(req, res) {
       res.status(500).json({ message: 'Error Fetching Jokes', error: err });
     });
 }
+
