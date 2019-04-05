@@ -12,7 +12,7 @@ function register(req, res) {
   let user = req.body;
   const hash = bcrypt.hashSync(user.password, 10)
   user.password = hash;
-  addEventListener(user).then(add=>{
+  add(user).then(add=>{
     res.status(201).json(add);
   }).catch(err=>{
     res.status(500).json(err);
@@ -21,6 +21,7 @@ function register(req, res) {
 
 function login(req, res) {
   // implement user login
+
 }
 
 function getJokes(req, res) {
@@ -36,4 +37,9 @@ function getJokes(req, res) {
     .catch(err => {
       res.status(500).json({ message: 'Error Fetching Jokes', error: err });
     });
+}
+
+async function add(user) {
+  const [id] = await db('users').insert(user)
+  return db('users').where({id}).first()
 }
