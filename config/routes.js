@@ -1,5 +1,7 @@
 const axios = require('axios');
-
+const bcrypt = require('bcryptjs');
+const jwt = require("jsonwebtoken");
+const db = require('./route-model')
 const { authenticate } = require('../auth/authenticate');
 
 module.exports = server => {
@@ -9,38 +11,52 @@ module.exports = server => {
 };
 
 function register(req, res) {
-  let user = req.body;
-  const hash = bcrypt.hashSync(user.password, 4)
+  const user = req.body;
+  const hash = bcrypt.hashSync(user.password, 8);
   user.password = hash;
-  add(user).then(add=>{
-    res.status(201).json(add);
-  }).catch(err=>{
-    res.status(500).json(err);
-  })
+  if (user.username && user.password) {
+    db.add(user) //add the user
+      .then(user => {
+        res.status(201).json(user);
+      })
+      .catch(err => {
+        res.status(500).json(err);
+      });
+  } else {
+    res.status(401).json({ message: "No username or pass" });
+  }
 }
 
 function login(req, res) {
-  // implement user login
-  let {username, password} = req.body;
-  findBy({username}).then(
-    user=>{
-      if(user && bcrypt.compareSync(password, user.password)){
-        const payload = {
-          subject: user.id,
-          username: user.username
+  const { username, password } = req.body;
+
+  if (username && password) {
+    db.findByUser({ username })
+      .then(user => {
+        if (bcrypt.compareSync(password, user.password)) {
+          const token = generateToken(user);
+          res.status(200).json({ message: `welcome ${user.username}`, token });
+        } else {
+          res.status(401).json({ message: "Invalid username or password!" });
         }
-        const options = {
-          expiresIn: '1d'
-        }
-        const token = jwt.sign(payload, jwt, options)
-        res.status(200).json({message: `Hello ${user.username}.`, token});
-      } else{
-        res.status(401).json({message: 'No Pass'});
-      }
-    }
-  ).catch(err=>{
-    res.status(500).json(err);
-  })
+      })
+      .catch(err => {
+        res.status(500).json(err);
+      });
+  } else {
+    res.status(401).json({ message: "No Pass or Username" });
+  }
+}
+
+function generateToken(user) {
+  const payload = {
+    subject: user.id,
+    username: user.username
+  };
+  const options = {
+    expiresIn: "1d"
+  };
+  return jwt.sign(payload, secret, options);
 }
 
 function getJokes(req, res) {
@@ -56,13 +72,4 @@ function getJokes(req, res) {
     .catch(err => {
       res.status(500).json({ message: 'Error Fetching Jokes', error: err });
     });
-}
-
-async function add(user) {
-  const [id] = await db('users').insert(user)
-  return db('users').where({id}).first()
-}
-
-function findBy(filter) {
-  return db('users').where(filter).first()
 }
